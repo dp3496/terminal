@@ -23,35 +23,92 @@ Both switchers behave very similarly, from the keychord that's pressed to show t
 
 ## Solution Design
 
+
+
+## UI/UX Design
+
+First, we'll give a quick overview of how the tab switcher UI would look like, then we'll dive into more detail on how the user would interact with the switcher.
+
+The tab switcher will appear as a box in the center of the terminal with a fixed width and height. In the box will be a vertical list of tabs with their titles and their assigned number for quick switching, and only one line will be highlighted to signify that tab is currently selected. There will only be 9 numbered tabs for quick switching, and the rest of the tabs will simply have an empty space where a number would be.
+
+The list would look something like this:
+```
+1 cmd (highlighted)
+2 cmd
+3 Windows PowerShell
+4 MSYS:/c/Users/booboo
+5 Git Bash
+6 cmd
+7 /c/
+8 /d/
+9 /e/
+  /f/
+  /g/
+  /h/
+```
+
+The highlighted line can move up or down, and if the user moves up while the highlighted line is already at the top of the list, it will wrap around to the bottom of the list. Similarly, it will wrap to the top if the highlight is at the bottom of the list and the user moves down.
+
+If there's more tabs than the UI can display, the list of tabs will scroll up/down as the user keeps iterating up/down. However, the number column does not move. The first nine tabs in the list will always be numbered.
+
+Refer to the mock above, and let's have the user iterate down past the end of the visible list by 4. The below mock shows the result.
+
+```
+1 Git Bash
+2 cmd
+3 /c/
+4 /d
+5 /e/
+6 /f/
+7 /g/
+8 /h/
+9 /i/
+  /j/
+  /k/
+  /l/ (highlighted)
+```
+
+`Git Bash` is now associated with number 1, and the `cmd`, `cmd`, `Windows Powershell`, and `MSYS:/c/Users/booboo` tabs are no longer visible.
+
 ### Using the Switcher
 
 #### Opening the Tab Switcher
 
-The user will press a combination of a modifier key and any other key/keychord to bring up the UI. For example, <kbd>ctrl+tab</kbd> and <kbd>ctrl+shift+tab</kbd> are popular keychords for opening tab switchers and navigating them. We'll allow the user to change these keybindings, but we'll require that there is a combination of a modifier key (the `anchor` key) and one other key (the `switcher` key).
+The user will press a keybinding named `OpenTabSwitcher` to bring up the UI. For example, <kbd>ctrl+tab</kbd> is a  popular keychord for opening tab switchers. The user will be able to change it to whatever they like. There will also be an optional `anchor` arg that may be provided to this keybinding.
+
+- `OpenTabSwitcher`
+    - _default_ = <kbd>ctrl+tab</kbd>
+    - _available args_: `anchor` - If this arg is given, the UI will dismiss on the release of the first key of this keybinding.
 
 #### Keeping it open
 
-There are two ways the user can keep the UI open after bringing it up.
+We use the term `anchor` to illustrate the idea that the UI stays visible as long as something is "anchoring" it down.
 
-1. The UI will stay open as long as the `anchor` key is held down. (`Anchor` mode is on).
-1. The UI will stay open even after the `anchor` key is released. (`Anchor` mode is off - _This is the default_).
+So, when the `OpenTabSwitcher` keybinding is given the `anchor` arg, the _first_ key of the keybinding will act as the `anchor` key. Holding that`anchor` key down will keep the switcher visible, and once the `anchor` key is released, the switcher will dismiss.
 
-There will be a setting that allows the user to turn `Anchor` mode on and off. _By default_, the tab switcher will _not_ be in anchor mode.
+If `OpenTabSwitcher` is not given the `anchor` arg, the switcher will stay visible even after the release of the key/keychord.
 
 #### Switching through Tabs
 
-The user can repeatedly press the `switcher` key or <kbd>shift</kbd> + `switcher` to navigate down or up the list of tabs in the UI. They can also use arrow keys to go up or down the list.
+The user will be able to navigate through the switcher with a couple of keybindings:
 
-As the user is cycling through the tab list, the terminal won't actually switch to the selected tab. It will keep displaying the current open tab until the switcher is dismissed with an `anchor` release or with <kbd>esc</kbd>.
+- Navigating down the list
+    - <kbd>tab</kbd> or <kbd>downArrow</kbd>
+- Navigating up the list
+    - <kbd>shift+tab</kbd> or <kbd>upArrow</kbd>
+
+The selected tab will be highlighted.
+
+As the user is cycling through the tab list, the terminal won't actually switch to the selected tab. It will keep displaying the current open tab until the switcher is dismissed with an `anchor` key release or with <kbd>esc</kbd>.
 
 While the user will be able to click on a tab in the switcher to bring the tab into focus, hovering over a tab with the mouse will not cause the tab highlight to go to that tab.
 
-#### Closing the UI
+#### Closing the Switcher
 
-1. If `Anchor` mode is on, the UI will be dismissed when the `anchor` key is released. It can also be dismissed when a `dismissal` key is pressed.
-2. If `Anchor` mode is off, the UI will only be dismissed when a `dismissal` key is pressed.
+1. If the `Anchor` arg is provided, the UI will be dismissed when the `anchor` key is released. It can also be dismissed when a `dismissal` key is pressed.
+2. If the `Anchor` arg is not provided, the UI will only be dismissed when a `dismissal` key is pressed.
 
-The following can be applied when `Anchor` mode is both on and off.
+The following applies when `Anchor` is or is not provided.
 
 1. The user can press a number associated with a tab to instantly switch to the tab and dismiss the switcher.
 2. The user can click on a tab to instantly switch to the tab and dismiss the switcher.
@@ -59,7 +116,7 @@ The following can be applied when `Anchor` mode is both on and off.
 
 The two `dismissal` keys are <kbd>esc</kbd> and <kbd>enter</kbd>. When <kbd>esc</kbd> is pressed, the UI will dismiss without switching to the selected tab, effectively cancelling the tab switch. When <kbd>enter</kbd> is pressed, the UI will dismiss, and terminal will switch to the selected tab.
 
-If the user presses the keychord for opening the switcher will not close the UI, it will iterate to the next tab in the list.
+Pressing the `OpenTabSwitcher` keychord will not close the Switcher.
 
 ### Most Recently Used Order
 
@@ -75,24 +132,6 @@ Similar to how the user can currently switch to a particular tab with a combinat
 
 Once the tab switcher is open, and the user presses a number, the tab switcher will be dismissed and the terminal will bring that tab into focus.
 
-### Settings and Key Bindings
-
-- `AnchorMode`
-    - _default_ = `false`
-    - If `true`, the UI will dismiss on the `Anchor` key release.
-- `OpenTabSwitcher`
-    - _default_ = <kbd>ctrl+tab</kbd>
-- `TabSwitchDown`
-    - _default_ = <kbd>tab</kbd> or <kbd>downArrow</kbd>
-- `TabSwitchUp`
-    - _default_ = <kbd>shift+tab</kbd> or <kbd>upArrow</kbd>
-- `AnchorKey`
-    - _default_ = <kbd>ctrl</kbd>
-
-## UI Design
-
-The dialog window will open with the size as a percentage of the window height (TODO: which maybe should be configurable?). The tabs and their titles will be laid out vertically, and the selected tab will be highlighted. To the left of the first nine tab titles will be a column to signify which number the tab is associated with (1-9). The user can quickly jump to a numbered tab without having to cycle through the list by simply pressing the number. The list will scroll if there isn't enough space to fit all the tabs in the box.
-
 ## Capabilities
 
 ### Accessibility
@@ -101,29 +140,48 @@ TODO:
 
 ### Security
 
-This won't introduce any new security issues.
+This really shouldn't introduce any security issues.
 
 ### Reliability
 
-TODO :The only thing I could think of is if there's an enormous amount of tabs present? Even then, as long as the data structures used to keep track of MRU are implemented well, it shouldn't cause any bottlenecks. Not fully sure on what else there is for this point.
+We'll need to be wary about how the UI is presented depending on different sizes of the terminal. Since we want the switcher to be in the center of the terminal with a fixed width and height, how would it look when the terminal is really thin length/width-wise?
+
+Also, the MRU ordering should be accurate, and should always be updated on every tab focus. 
+
+Reordering tabs on the tab bar shouldn't change MRU, but the in-order tab list should reflect that.
 
 ### Compatibility
 
 The existing way of navigating horizontally through the tabs on the tab bar should not break.
+The implementation should also take into account the addition of other features on top of this UI, such as Pane Navigation described below.
 
 ### Performance, Power, and Efficiency
 
-## Potential Issues
+We'll need to ensure that updating the MRU won't take long.
 
-N/A
+## Potential Issues
 
 ## Future considerations
 
-1. Pane Navigation
-2. Tab Search by Name/Title
-3. Tab Preview on Hover
+### Pane Navigation
+
+Being able to navigate through your list of 1000 tabs is great, but what if I had 10 panes per tab? Having the tab switcher also be able to dive into the tab and figure out how to give the focus to a specific pane in a tab would be awesome. First we'll work on a tab switcher that only switches on tabs, but we'll implement it in a way to allow for pane navigation to be implemented in the future.
+
+To give an initial idea, the user would navigate to a tab, and press `leftArrow` or `rightArrow` to go into/out of a pop out list of the tab's panes.
+
+### Tab Search by Name/Title
+
+This is something that would be nice to have, especially when there's a large list of tabs you're cycling through.
+
+### Tab Preview on Hover
+
+Should we do this? How would this be done? How does this affect MRU?
 
 ## Resources
+
+Feature Request: An advanced tab switcher [#1502]  
+Ctrl+Tab toggle between last two windows like Alt+Tab [#973]  
+The Command Palette Thread [#2046]
 
 <!-- Footnotes -->
 [#973]: https://github.com/microsoft/terminal/issues/973
