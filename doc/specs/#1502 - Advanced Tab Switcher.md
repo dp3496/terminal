@@ -23,9 +23,11 @@ Both switchers behave very similarly, from the keychord that's pressed to show t
 
 ## Solution Design
 
-
+There will be a new class `TabSwitcherControl` that will get a pointer to the tabList that's contained in TerminalPage.
 
 ## UI/UX Design
+
+ListView, StackPanel, AppBarButton? (This is where we could debate what it is)
 
 First, we'll give a quick overview of how the tab switcher UI would look like, then we'll dive into more detail on how the user would interact with the switcher.
 
